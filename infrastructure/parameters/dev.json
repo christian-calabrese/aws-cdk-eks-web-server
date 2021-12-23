@@ -1,0 +1,18 @@
+{
+  "name": "dev",
+  "git_repository_name": "eks_web_server_cdk",
+  "branch": "develop",
+  "ci_cd_enabled": false,
+  "github_repository_owner": "christian-calabrese",
+  "vpc": {
+    "az_number": 3,
+    "nats_number": 1
+  },
+  "eks": {
+    "container_image_name": "eks_web_server_cdk",
+    "compute_size": "small",
+    "instance_count": 3,
+    "fargate_enabled": true,
+    "eks_version": "1.21"
+  }
+}
