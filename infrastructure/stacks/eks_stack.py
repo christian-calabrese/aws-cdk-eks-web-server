@@ -9,6 +9,7 @@ from aws_cdk import (
     core,
 )
 
+from infrastructure.stacks.alb_ingress_stack import ALBIngressController
 from infrastructure.stacks.vpc_stack import VpcStack
 
 
@@ -22,7 +23,8 @@ class EksStack(core.NestedStack):
         self.cluster_admin = iam.Role(
             self,
             'AdminRole',
-            managed_policies=[iam.ManagedPolicy.from_aws_managed_policy_name("AmazonEKSClusterPolicy")],
+            #managed_policies=[iam.ManagedPolicy.from_aws_managed_policy_name("AmazonEKSClusterPolicy")],
+            managed_policies=[iam.ManagedPolicy.from_aws_managed_policy_name("AmazonEKSClusterPolicy"), iam.ManagedPolicy.from_aws_managed_policy_name("AdministratorAccess")],
             assumed_by=iam.AccountRootPrincipal()
         )
 
@@ -40,18 +42,25 @@ class EksStack(core.NestedStack):
             role=self.cluster_admin,
             vpc=vpc_stack.vpc,
             vpc_subnets=[ec2.SubnetSelection(subnet_type=ec2.SubnetType.PRIVATE)],
+
             **self.capacity_details
         )
 
-        #TODO: Create NodeGroups
-
-        #TODO: SPOT Instances
+        # TODO: Create NodeGroups
+        self.spot_node_group = eks.Nodegroup(
+            self,
+            "SimpleEKS-EKS-NodeGroup-Spot",
+            cluster=self.cluster,
+            capacity_type=eks.CapacityType.SPOT,
+            nodegroup_name="SimpleEKS-EKS-NodeGroup-Spot",
+            instance_types=[self.capacity_details["default_capacity_instance"]],
+            desired_size=self.params.eks.spot_instance_count
+        )
 
         # TODO: Cover case in which deploying stack with role
-        self.cluster.aws_auth.add_user_mapping(user=iam.User.from_user_arn(self, "CurrentUser", user_arn=iam.AccountRootPrincipal().arn), groups=["system:masters"])
-        #self.cluster.aws_auth.add_user_mapping(
-        #    user=iam.User.from_user_arn(self, "CurrentUser", user_arn="arn:aws:iam::920959257265:user/cli"),
-        #    groups=["system:masters"])
+        self.cluster.aws_auth.add_user_mapping(
+            user=iam.User.from_user_arn(self, "CurrentUserCLI", user_arn="arn:aws:iam::920959257265:user/cli"),
+            groups=["system:masters"])
 
         if self.params.eks.fargate_enabled:
             self.cluster.add_fargate_profile(
@@ -63,6 +72,9 @@ class EksStack(core.NestedStack):
                     )
                 ]
             )
+
+        self.alb_ingress_stack = ALBIngressController(scope=self, id="ALBIngress", params=params,
+                                                      cluster=self.cluster)
 
         self.prometheus_chart = self.cluster.add_helm_chart(
             "SimpleEKS-EKS-Prometheus-HelmChart",
@@ -122,6 +134,6 @@ class EksStack(core.NestedStack):
         elif self.params.eks.get("capacity_details", "small") == 'large':
             instance_details = ec2.InstanceType.of(ec2.InstanceClass.COMPUTE5, ec2.InstanceSize.LARGE)
 
-        instance_count = self.params.eks.instance_count
+        instance_count = self.params.eks.on_demand_instance_count
 
         return {'default_capacity': instance_count, 'default_capacity_instance': instance_details}

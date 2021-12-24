@@ -72,8 +72,7 @@ class PipelineStack(core.NestedStack):
                 effect=iam.Effect.ALLOW
             )
         ]
-        secondary_db_uri = 'simpleeks.route53.rds.replica' if params.aurora.get(
-                                                                    "has_replica", None) else ""
+
         self.deploy_project = codebuild.PipelineProject(self,
                                                         "SimpleEKS-CodeBuild-Project",
                                                         environment=codebuild.BuildEnvironment(
@@ -82,13 +81,7 @@ class PipelineStack(core.NestedStack):
                                                         ),
                                                         environment_variables={
                                                             "ENVIRONMENT": codebuild.BuildEnvironmentVariable(
-                                                                value=params.name),
-                                                            "PRIMARY_DB_URI": codebuild.BuildEnvironmentVariable(
-                                                                value='simpleeks.route53.rds'),
-                                                            "SECONDARY_DB_URI": codebuild.BuildEnvironmentVariable(
-                                                                value=secondary_db_uri),
-                                                            "WORDPRESS_TABLE_PREFIX": codebuild.BuildEnvironmentVariable(
-                                                                value='wp_')
+                                                                value=params.name)
                                                         },
                                                         build_spec=codebuild.BuildSpec.from_object(
                                                             {
@@ -103,7 +96,7 @@ class PipelineStack(core.NestedStack):
                                                                         "commands": [
                                                                             "echo Build started on `date`",
                                                                             "pip3 install -r requirements.txt",
-                                                                            "npm install aws-cdk",
+                                                                            "npm install",
                                                                         ]
                                                                     },
                                                                     "build": {

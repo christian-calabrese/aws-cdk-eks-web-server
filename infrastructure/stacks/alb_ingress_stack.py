@@ -1,16 +1,16 @@
 from aws_cdk import (
     aws_iam as iam,
+    aws_ec2 as ec2,
     aws_eks as eks,
     core,
 )
-from infrastructure.stacks.eks_stack import EksStack
 
 
 class ALBIngressController(core.Construct):
 
-    def __init__(self, scope: core.Construct, id: str, params, eks_stack: EksStack) -> None:
+    def __init__(self, scope: core.Construct, id: str, params, cluster: eks.Cluster) -> None:
         super().__init__(scope, id)
-        self.cluster = eks_stack.cluster
+        self.cluster = cluster
 
         iam_policy = iam.PolicyStatement(
             actions=[
@@ -167,6 +167,9 @@ class ALBIngressController(core.Construct):
             }
         }
 
+        subnets = [subnet.subnet_id for subnet in cluster.kubectl_private_subnets]
+        self.tag_all_subnets(cluster.kubectl_private_subnets, f"kubernetes.io/cluster/{cluster.cluster_name}", "shared")
+
         deployment_manifest = {
             "apiVersion": "apps/v1",
             "kind": "Deployment",
@@ -175,7 +178,10 @@ class ALBIngressController(core.Construct):
                 "labels": {
                     "app.kubernetes.io/name": "alb-ingress-controller"
                 },
-                "namespace": "kube-system"
+                "namespace": "kube-system",
+                "annotations": {
+                    "alb.ingress.kubernetes.io/subnets": ", ".join(subnets)
+                }
             },
             "spec": {
                 "selector": {"matchLabels": {"app.kubernetes.io/name": "alb-ingress-controller"}},
@@ -206,9 +212,13 @@ class ALBIngressController(core.Construct):
         service_acct.add_to_principal_policy(statement=iam_policy)
 
         alb_ingress_access_manifests = eks.KubernetesManifest(self, "ClusterRoleALB", cluster=self.cluster,
-                                                                  manifest=[cluster_role_manifest,
-                                                                            cluster_role_binding_manifest,
-                                                                            service_account_manifest])
+                                                              manifest=[cluster_role_manifest,
+                                                                        cluster_role_binding_manifest,
+                                                                        service_account_manifest])
 
-        alb_ingress_deployment = eks.KubernetesManifest(self, "ALBIngressDeployment", cluster=self.cluster,
-                                                            manifest=[deployment_manifest])
+        alb_ingress_deployment = eks.KubernetesManifest(self, "IngressDeployment", cluster=self.cluster,
+                                                        manifest=[deployment_manifest])
+
+    def tag_all_subnets(self, subnets: list[ec2.Subnet], tag_name, tag_value):
+        for subnet in subnets:
+            core.Tags.of(subnet).add(tag_name, tag_value)

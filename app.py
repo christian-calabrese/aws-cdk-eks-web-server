@@ -23,7 +23,7 @@ with open(f"infrastructure/parameters/uncommitted/.env.json", "r") as f:
 
 params.__dict__.update(uncommitted_env)
 
-main_stack = InfrastructureStack(app, "SimpleEKS-MainStack",
+main_stack = InfrastructureStack(app, "CC-MainStack",
                                  env=core.Environment(region="eu-west-1"), params=params)
 Tags.of(main_stack).add("stack_name", "ChristianCalabreseStack")
 app.synth()
