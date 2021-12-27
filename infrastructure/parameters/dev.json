@@ -14,6 +14,7 @@
     "compute_size": "small",
     "on_demand_instance_count": 2,
     "spot_instance_count": 2,
+    "web_server_replicas": 3,
     "fargate_enabled": false,
     "eks_version": "1.21"
   }

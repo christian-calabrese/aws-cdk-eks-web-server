@@ -38,14 +38,11 @@ class EksStack(core.NestedStack):
             version=eks.KubernetesVersion.of(self.params.eks.eks_version),
             cluster_name=self.params.eks.cluster_name,
             masters_role=self.cluster_admin,
-            #vpc=vpc_stack.vpc,
-            #vpc_subnets=[ec2.SubnetSelection(subnet_type=ec2.SubnetType.PRIVATE)],
+            vpc=vpc_stack.vpc,
+            vpc_subnets=[ec2.SubnetSelection(subnet_type=ec2.SubnetType.PRIVATE)],
             **self.capacity_details
         )
 
-
-
-        '''
         self.spot_node_group = eks.Nodegroup(
             self,
             "SimpleEKS-EKS-NodeGroup-Spot",
@@ -55,7 +52,7 @@ class EksStack(core.NestedStack):
             instance_types=[self.capacity_details["default_capacity_instance"]],
             desired_size=self.params.eks.spot_instance_count,
             node_role=self.cluster.default_nodegroup.role
-        )'''
+        )
 
         # TODO: Cover case in which deploying stack with role
         self.cluster.aws_auth.add_user_mapping(
@@ -72,7 +69,6 @@ class EksStack(core.NestedStack):
                     )
                 ]
             )
-
 
         self.prometheus_chart = self.cluster.add_helm_chart(
             "SimpleEKS-EKS-Prometheus-HelmChart",
@@ -110,21 +106,16 @@ class EksStack(core.NestedStack):
         chart_asset = s3_assets.Asset(self, "ChartAsset",
                                       path=f"{os.path.dirname(__file__)}/../../helm/ccekswebserver"
                                       )
-
         self.web_server_chart = self.cluster.add_helm_chart(
             "SimpleEKS-EKS-WebServer-HelmChart",
             chart_asset=chart_asset,
             namespace="default",
             timeout=core.Duration.minutes(10),
             values={
-                "global": {
-                    "repository": docker_image.repository.repository_uri
-                },
                 "image": {
-                    "imageName": params.eks.container_image_name,
-                    "pullPolicy": "Always",
-                }
-
+                    "uri": docker_image.image_uri
+                },
+                "replicaCount": params.eks.web_server_replicas
             },
             wait=True
         )

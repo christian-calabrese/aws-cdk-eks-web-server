@@ -59,5 +59,5 @@ class VpcStack(core.NestedStack):
                 enable_dns_hostnames=True
             )
 
-        tag_all_subnets(self.vpc.public_subnets,
+        tag_all_subnets(self.vpc.private_subnets,
                         f"kubernetes.io/cluster/{params.eks.cluster_name}", "shared")
