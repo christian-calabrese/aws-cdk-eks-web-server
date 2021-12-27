@@ -9,6 +9,7 @@
     "nats_number": 0
   },
   "eks": {
+    "cluster_name": "SimpleEKS-Cluster",
     "container_image_name": "eks_web_server_cdk",
     "compute_size": "large",
     "instance_count": 6,

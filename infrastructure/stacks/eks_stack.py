@@ -23,8 +23,7 @@ class EksStack(core.NestedStack):
         self.cluster_admin = iam.Role(
             self,
             'AdminRole',
-            #managed_policies=[iam.ManagedPolicy.from_aws_managed_policy_name("AmazonEKSClusterPolicy")],
-            managed_policies=[iam.ManagedPolicy.from_aws_managed_policy_name("AmazonEKSClusterPolicy"), iam.ManagedPolicy.from_aws_managed_policy_name("AdministratorAccess")],
+            managed_policies=[iam.ManagedPolicy.from_aws_managed_policy_name("AmazonEKSClusterPolicy")],
             assumed_by=iam.AccountRootPrincipal()
         )
 
@@ -35,18 +34,18 @@ class EksStack(core.NestedStack):
         ))
 
         self.cluster = eks.Cluster(
-            self, "SimpleEKS-EKS-Cluster",
+            self, "Simple-EKS-Cluster",
             version=eks.KubernetesVersion.of(self.params.eks.eks_version),
-            # cluster_name="SimpleEKS-EKS-Cluster",
+            cluster_name=self.params.eks.cluster_name,
             masters_role=self.cluster_admin,
-            role=self.cluster_admin,
-            vpc=vpc_stack.vpc,
-            vpc_subnets=[ec2.SubnetSelection(subnet_type=ec2.SubnetType.PRIVATE)],
-
+            #vpc=vpc_stack.vpc,
+            #vpc_subnets=[ec2.SubnetSelection(subnet_type=ec2.SubnetType.PRIVATE)],
             **self.capacity_details
         )
 
-        # TODO: Create NodeGroups
+
+
+        '''
         self.spot_node_group = eks.Nodegroup(
             self,
             "SimpleEKS-EKS-NodeGroup-Spot",
@@ -54,8 +53,9 @@ class EksStack(core.NestedStack):
             capacity_type=eks.CapacityType.SPOT,
             nodegroup_name="SimpleEKS-EKS-NodeGroup-Spot",
             instance_types=[self.capacity_details["default_capacity_instance"]],
-            desired_size=self.params.eks.spot_instance_count
-        )
+            desired_size=self.params.eks.spot_instance_count,
+            node_role=self.cluster.default_nodegroup.role
+        )'''
 
         # TODO: Cover case in which deploying stack with role
         self.cluster.aws_auth.add_user_mapping(
@@ -73,8 +73,6 @@ class EksStack(core.NestedStack):
                 ]
             )
 
-        self.alb_ingress_stack = ALBIngressController(scope=self, id="ALBIngress", params=params,
-                                                      cluster=self.cluster)
 
         self.prometheus_chart = self.cluster.add_helm_chart(
             "SimpleEKS-EKS-Prometheus-HelmChart",
@@ -98,6 +96,9 @@ class EksStack(core.NestedStack):
             repository="https://grafana.github.io/helm-charts",
             timeout=core.Duration.minutes(10)
         )
+
+        self.alb_ingress_stack = ALBIngressController(scope=self, id="ALBIngress", params=params,
+                                                      cluster=self.cluster)
 
         docker_image = ecr_assets.DockerImageAsset(
             self, "SimpleEKS-ECR-WebServer-Image",
