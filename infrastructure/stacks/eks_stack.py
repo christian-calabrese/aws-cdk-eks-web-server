@@ -10,6 +10,7 @@ from aws_cdk import (
 )
 
 from infrastructure.stacks.alb_ingress_stack import ALBIngressController
+from infrastructure.stacks.metrics_server_stack import MetricsServerManifest
 from infrastructure.stacks.vpc_stack import VpcStack
 
 
@@ -78,13 +79,8 @@ class EksStack(core.NestedStack):
                 ]
             )
 
-        self.metrics_server_chart = self.cluster.add_helm_chart(
-            "SimpleEKS-EKS-MetricsServer-HelmChart",
-            chart="metrics-server",
-            version="5.10.12",
-            namespace="metrics",
-            repository="https://charts.bitnami.com/bitnami"
-        )
+        self.metrics_server_manifest = MetricsServerManifest(self, "SimpleEKS-MetricsServer-Manifest", self.params,
+                                                             self.cluster)
 
         self.prometheus_chart = self.cluster.add_helm_chart(
             "SimpleEKS-EKS-Prometheus-HelmChart",
@@ -153,9 +149,9 @@ class EksStack(core.NestedStack):
                         ]
                     }
                 },
-                #"dashboards": {
+                # "dashboards": {
                 #    ""
-                #},
+                # },
                 "service": {
                     "type": "LoadBalancer"
                 }
@@ -175,6 +171,7 @@ class EksStack(core.NestedStack):
         chart_asset = s3_assets.Asset(self, "ChartAsset",
                                       path=f"{os.path.dirname(__file__)}/../../helm/ccekswebserver"
                                       )
+
         self.web_server_chart = self.cluster.add_helm_chart(
             "SimpleEKS-EKS-WebServer-HelmChart",
             chart_asset=chart_asset,
