@@ -73,6 +73,17 @@ class PipelineStack(core.NestedStack):
                 ],
                 resources=['*'],
                 effect=iam.Effect.ALLOW
+            ),
+            iam.PolicyStatement(
+                actions=[
+                    "secretsmanager:GetResourcePolicy",
+                    "secretsmanager:GetSecretValue",
+                    "secretsmanager:DescribeSecret",
+                    "secretsmanager:ListSecretVersionIds",
+                    "secretsmanager:ListSecrets"
+                ],
+                resources=['*'],
+                effect=iam.Effect.ALLOW
             )
         ]
 
