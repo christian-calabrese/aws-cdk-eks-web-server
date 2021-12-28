@@ -93,13 +93,13 @@ class PipelineStack(core.NestedStack):
                                                                 "phases": {
                                                                     "install": {
                                                                         "runtime-versions": {
-                                                                            "nodejs": 12,
+                                                                            "nodejs": 14,
                                                                             "python": "3.8"
                                                                         },
                                                                         "commands": [
                                                                             "echo Build started on `date`",
                                                                             "pip3 install -r requirements.txt",
-                                                                            "npm install aws-cdk",
+                                                                            "npm install aws-cdk@1.137.0",
                                                                         ]
                                                                     },
                                                                     "build": {

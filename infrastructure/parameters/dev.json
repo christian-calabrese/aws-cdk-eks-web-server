@@ -14,7 +14,7 @@
     "container_image_name": "eks_web_server_cdk",
     "compute_size": "small",
     "on_demand_instance_count": 3,
-    "spot_instance_count": 0,
+    "spot_instance_count": 1,
     "web_server_replicas": 3,
     "fargate_enabled": false,
     "eks_version": "1.21",
