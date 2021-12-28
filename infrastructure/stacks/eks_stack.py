@@ -81,8 +81,9 @@ class EksStack(core.NestedStack):
         self.metrics_server_chart = self.cluster.add_helm_chart(
             "SimpleEKS-EKS-MetricsServer-HelmChart",
             chart="metrics-server",
-            version="2.9.0",
+            version="5.10.12",
             namespace="metrics",
+            repository="https://charts.bitnami.com/bitnami"
         )
 
         self.prometheus_chart = self.cluster.add_helm_chart(

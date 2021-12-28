@@ -99,7 +99,7 @@ class PipelineStack(core.NestedStack):
                                                                         "commands": [
                                                                             "echo Build started on `date`",
                                                                             "pip3 install -r requirements.txt",
-                                                                            "npm install",
+                                                                            "npm install aws-cdk",
                                                                         ]
                                                                     },
                                                                     "build": {
