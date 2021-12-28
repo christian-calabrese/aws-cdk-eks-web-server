@@ -4,6 +4,6 @@ from aws_cdk import (
 )
 
 
-def tag_all_subnets(subnets: list[ec2.Subnet], tag_name, tag_value):
+def tag_all_subnets(subnets, tag_name, tag_value):
     for subnet in subnets:
         core.Tags.of(subnet).add(tag_name, tag_value)
