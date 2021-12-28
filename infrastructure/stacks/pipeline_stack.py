@@ -1,4 +1,5 @@
 import json
+
 from aws_cdk import (
     aws_codebuild as codebuild,
     aws_codepipeline as codepipeline,
@@ -9,9 +10,11 @@ from aws_cdk import (
     core
 )
 
+from infrastructure.stacks.eks_stack import EksStack
+
 
 class PipelineStack(core.NestedStack):
-    def __init__(self, scope: core.Construct, id: str, params,
+    def __init__(self, scope: core.Construct, id: str, params, eks_stack: EksStack,
                  **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
@@ -158,3 +161,6 @@ class PipelineStack(core.NestedStack):
                 effect=iam.Effect.ALLOW
             )
         )
+
+        #eks_stack.cluster.aws_auth.add_role_mapping(role=self.deploy_project.role,
+        #                                            groups=["system:masters"])

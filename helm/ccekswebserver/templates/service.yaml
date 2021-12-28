@@ -11,5 +11,9 @@ spec:
       targetPort: http
       protocol: TCP
       name: http
+    - port: 9113
+      targetPort: http
+      protocol: TCP
+      name: metrics
   selector:
     {{- include "ccekswebserver.selectorLabels" . | nindent 4 }}

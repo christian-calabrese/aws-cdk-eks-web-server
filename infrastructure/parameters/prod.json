@@ -1,6 +1,7 @@
 {
   "name": "prod",
   "git_repository_name": "eks_web_server_cdk",
+  "github_token_secret_name": "simple_eks_secret_github_token",
   "branch": "main",
   "ci_cd_enabled": true,
   "github_repository_owner": "christian-calabrese",

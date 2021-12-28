@@ -1,8 +1,9 @@
 {
   "name": "dev",
   "git_repository_name": "eks_web_server_cdk",
+  "github_token_secret_name": "simple_eks_secret_github_token",
   "branch": "develop",
-  "ci_cd_enabled": false,
+  "ci_cd_enabled": true,
   "github_repository_owner": "christian-calabrese",
   "vpc": {
     "az_number": 3,
@@ -16,6 +17,12 @@
     "spot_instance_count": 2,
     "web_server_replicas": 3,
     "fargate_enabled": false,
-    "eks_version": "1.21"
+    "eks_version": "1.21",
+    "privileged_iam_principals": {
+      "users": [
+        "arn:aws:iam::920959257265:user/cli"
+      ],
+      "roles": []
+    }
   }
 }

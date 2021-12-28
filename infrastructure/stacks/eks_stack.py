@@ -55,9 +55,17 @@ class EksStack(core.NestedStack):
         )
 
         # TODO: Cover case in which deploying stack with role
-        self.cluster.aws_auth.add_user_mapping(
-            user=iam.User.from_user_arn(self, "CurrentUserCLI", user_arn="arn:aws:iam::920959257265:user/cli"),
-            groups=["system:masters"])
+        for user in self.params.eks.privileged_iam_principals.users:
+            user_id = user.split("/")[-1].upper()
+            self.cluster.aws_auth.add_user_mapping(
+                user=iam.User.from_user_arn(self, user_id, user_arn=user),
+                groups=["system:masters"])
+
+        for role in self.params.eks.privileged_iam_principals.roles:
+            role_id = role.split("/")[-1].upper()
+            self.cluster.aws_auth.add_role_mapping(
+                role=iam.Role.from_role_arn(self, role_id, role_arn=role),
+                groups=["system:masters"])
 
         if self.params.eks.fargate_enabled:
             self.cluster.add_fargate_profile(
@@ -70,27 +78,87 @@ class EksStack(core.NestedStack):
                 ]
             )
 
+        self.metrics_server_chart = self.cluster.add_helm_chart(
+            "SimpleEKS-EKS-MetricsServer-HelmChart",
+            chart="metrics-server",
+            version="2.9.0",
+            namespace="metrics",
+        )
+
         self.prometheus_chart = self.cluster.add_helm_chart(
             "SimpleEKS-EKS-Prometheus-HelmChart",
             release="prometheus",
-            chart="kube-prometheus-stack",
+            chart="prometheus",
             create_namespace=True,
             namespace="prometheus",
             repository="https://prometheus-community.github.io/helm-charts",
             values={
-                "alertmanager.persistentVolume.storageClass": "gp2",
-                "server.persistentVolume.storageClass": "gp2"
+                "alertmanager": {
+                    "persistentVolume": {
+                        "storageClass": "gp2"
+                    }
+                },
+                "server": {
+                    "persistentVolume": {
+                        "storageClass": "gp2"
+                    }
+                },
+                "prometheus": {
+                    "prometheusSpec": {
+                        "additionalScrapeConfigs": [
+                            {
+                                "job_name": "nginx-ingress",
+                                "metrics_path": "/metrics",
+                                "scrape_interval": "5s",
+                                "static_configs": [
+                                    {
+                                        "targets": [
+                                            "nginx-ingress-controller-metrics:9113"
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }
             }
         )
 
         self.grafana_chart = self.cluster.add_helm_chart(
             "SimpleEKS-EKS-Grafana-HelmChart",
             chart="grafana",
-            namespace="default",
+            namespace="grafana",
             release="grafana",
             version="6.0.0",
             repository="https://grafana.github.io/helm-charts",
-            timeout=core.Duration.minutes(10)
+            timeout=core.Duration.minutes(10),
+            values={
+                "persistence": {
+                    "storageClassName": "gp2",
+                    "enabled": True
+                },
+                "adminPassword": "TestPWD!",
+                "datasources": {
+                    "datasources.yaml": {
+                        "apiVersion": 1,
+                        "datasources": [
+                            {
+                                "name": "Prometheus",
+                                "type": "prometheus",
+                                "url": "http://prometheus-server.prometheus.svc.cluster.local",
+                                "access": "proxy",
+                                "isDefault": True
+                            }
+                        ]
+                    }
+                },
+                #"dashboards": {
+                #    ""
+                #},
+                "service": {
+                    "type": "LoadBalancer"
+                }
+            }
         )
 
         self.alb_ingress_stack = ALBIngressController(scope=self, id="ALBIngress", params=params,

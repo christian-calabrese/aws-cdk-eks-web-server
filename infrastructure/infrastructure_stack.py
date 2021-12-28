@@ -16,4 +16,4 @@ class InfrastructureStack(cdk.Stack):
                                   vpc_stack=self.vpc_stack)
 
         if params.get("ci_cd_enabled", False):
-            self.pipeline_stack = PipelineStack(scope=self, id="PipelineStack", params=params)
+            self.pipeline_stack = PipelineStack(scope=self, id="PipelineStack", params=params, eks_stack=self.eks_stack)

@@ -4,6 +4,7 @@ metadata:
   name: {{ include "ccekswebserver.fullname" . }}
   labels:
     {{- include "ccekswebserver.labels" . | nindent 4 }}
+    monitoring: prometheus
 spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
@@ -37,6 +38,8 @@ spec:
             - name: http
               containerPort: 80
               protocol: TCP
+            - name: prometheus
+              containerPort: 9113
           livenessProbe:
             httpGet:
               path: /
