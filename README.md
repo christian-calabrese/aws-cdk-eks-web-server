@@ -106,7 +106,7 @@ In fact, it is possible to keep the CDK and Back-End infrastructure code in the 
 programming languages.
 
 (&ast;) To create the codestar connection between CodePipeline and GitHub, you need to have created a personal access
-token on github. This token will be securely preserved in the secret called `wordpress_secret_github_token`.
+token on github. This token will be securely preserved in the secret called `simple_eks_secret_github_token`.
 The IaC is implemented with the possibility to take this token from the `/infrastructure/parameters/uncommitted/.env.json` file.
 As can be seen from the path, this file is not committed to git, so you can use the `example.env.json` file as a base. 
 It's also possible to deploy the architecture without the CI/CD stack in such a way that the creation of
