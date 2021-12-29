@@ -6,6 +6,7 @@ from aws_cdk import (
     aws_eks as eks,
     aws_iam as iam,
     aws_s3_assets as s3_assets,
+    aws_autoscaling as autoscaling,
     core,
 )
 
@@ -44,16 +45,37 @@ class EksStack(core.NestedStack):
             **self.capacity_details
         )
 
-        self.spot_node_group = eks.Nodegroup(
-            self,
-            "SimpleEKS-EKS-NodeGroup-Spot",
-            cluster=self.cluster,
-            capacity_type=eks.CapacityType.SPOT,
-            nodegroup_name="SimpleEKS-EKS-NodeGroup-Spot",
-            instance_types=[self.capacity_details["default_capacity_instance"]],
-            desired_size=self.params.eks.spot_instance_count,
-            node_role=self.cluster.default_nodegroup.role
-        )
+        asg_spot = autoscaling.AutoScalingGroup(self, 'AsgSpot',
+                                                vpc=self.cluster.vpc,
+                                                spot_price='0.1094',
+                                                desired_capacity=self.params.eks.spot_instance_count,
+                                                max_capacity=10,
+                                                instance_type=self.capacity_details["default_capacity_instance"],
+                                                update_type=autoscaling.UpdateType.ROLLING_UPDATE,
+                                                machine_image=eks.EksOptimizedImage(
+                                                    kubernetes_version=eks.KubernetesVersion.of(
+                                                        self.params.eks.eks_version).version)
+
+                                                )
+
+        asg_on_demand = autoscaling.AutoScalingGroup(self, 'AsgOnDemand',
+                                                     vpc=self.cluster.vpc,
+                                                     desired_capacity=self.params.eks.on_demand_instance_count,
+                                                     max_capacity=self.params.eks.on_demand_instance_count,
+                                                     instance_type=self.capacity_details["default_capacity_instance"],
+                                                     update_type=autoscaling.UpdateType.ROLLING_UPDATE,
+                                                     machine_image=eks.EksOptimizedImage(
+                                                         kubernetes_version=eks.KubernetesVersion.of(
+                                                             self.params.eks.eks_version).version)
+                                                     )
+
+        asg_spot.scale_on_cpu_utilization("SimpleEKS-ScaleSpotOnCPUUtilization", target_utilization_percent=75)
+
+        self.cluster.connect_auto_scaling_group_capacity(asg_on_demand,
+                                                         map_role=True)
+
+        self.cluster.connect_auto_scaling_group_capacity(asg_spot,
+                                                         map_role=True)
 
         # TODO: Cover case in which deploying stack with role
         for user in self.params.eks.privileged_iam_principals.users:
@@ -149,9 +171,15 @@ class EksStack(core.NestedStack):
                         ]
                     }
                 },
-                # "dashboards": {
-                #    ""
-                # },
+                "dashboards": {
+                    "default": {
+                        "prometheus-stats": {
+                            "gnetId": 1860,
+                            "revision": 24,
+                            "datasource": "Prometheus"
+                        }
+                    }
+                },
                 "service": {
                     "type": "LoadBalancer"
                 }
@@ -192,6 +220,5 @@ class EksStack(core.NestedStack):
         elif self.params.eks.get("capacity_details", "small") == 'large':
             instance_details = ec2.InstanceType.of(ec2.InstanceClass.COMPUTE5, ec2.InstanceSize.LARGE)
 
-        instance_count = self.params.eks.on_demand_instance_count
-
-        return {'default_capacity': instance_count, 'default_capacity_instance': instance_details}
+        return {'default_capacity': 0, 'default_capacity_instance': instance_details,
+                'default_capacity_type': eks.DefaultCapacityType.NODEGROUP}

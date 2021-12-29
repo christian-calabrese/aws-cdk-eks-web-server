@@ -328,16 +328,18 @@ class ALBIngressController(core.Construct):
             }
         }
 
+        '''
         service_acct = eks.ServiceAccount(
             self, "ALBIngressSA",
             cluster=self.cluster,
         )
 
         for statement in iam_policy["Statement"]:
-            service_acct.add_to_principal_policy(iam.PolicyStatement.from_json(statement))
+            #service_acct.add_to_principal_policy(iam.PolicyStatement.from_json(statement))
             self.cluster.role.add_to_principal_policy(iam.PolicyStatement.from_json(statement))
             self.cluster.default_nodegroup.role.add_to_principal_policy(iam.PolicyStatement.from_json(statement))
 
+        
         alb_ingress_access_manifests = eks.KubernetesManifest(self, "ClusterRoleALB", cluster=self.cluster,
                                                               manifest=[cluster_role_manifest,
                                                                         cluster_role_binding_manifest,
@@ -354,7 +356,9 @@ class ALBIngressController(core.Construct):
                 "serviceAccount.create": False,
                 "serviceAccount.name": service_acct.service_account_name
             }
-        )
+        )'''
+
+        alb_controller = eks.AlbController(self, "ALBIngressDeployment", cluster=cluster, version=eks.AlbControllerVersion.V2_3_0)
 
         # alb_ingress_deployment = eks.KubernetesManifest(self, "ALBIngressDeployment", cluster=self.cluster,
         #                                               manifest=[deployment_manifest])
