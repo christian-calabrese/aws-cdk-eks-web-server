@@ -44,7 +44,7 @@ root
     └───ccekswebserver - The folder containing the helm charts needed to spin up the web server
 ```
 
-### Installazione requisiti
+### Prerequisites installation
 
 1. Install Python (https://www.python.org/downloads/)
 2. Install node.js (https://nodejs.org/en/download/)

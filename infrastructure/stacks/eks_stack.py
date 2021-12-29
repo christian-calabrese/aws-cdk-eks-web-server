@@ -152,6 +152,17 @@ class EksStack(core.NestedStack):
             repository="https://grafana.github.io/helm-charts",
             timeout=core.Duration.minutes(10),
             values={
+                "metadata":
+                    {
+                        "labels": {
+                            "grafana_dashboard": "1"
+                        }
+                    },
+                "sidecar": {
+                    "dashboards": {
+                        "enabled": True
+                    }
+                },
                 "persistence": {
                     "storageClassName": "gp2",
                     "enabled": True
@@ -171,11 +182,28 @@ class EksStack(core.NestedStack):
                         ]
                     }
                 },
+                "dashboardProviders": {
+                    "dashboardproviders.yaml": {
+                        "apiVersion": 1,
+                        "providers": [
+                            {
+                                "name": "default",
+                                "orgId": 1,
+                                "folder": "",
+                                "type": "file",
+                                "disableDeletion": False,
+                                "editable": True,
+                                "options": {
+                                    "path": "/var/lib/grafana/dashboards"
+                                }
+                            }
+                        ]
+                    }
+                },
                 "dashboards": {
                     "default": {
                         "prometheus-stats": {
-                            "gnetId": 1860,
-                            "revision": 24,
+                            "url": "https://grafana.com/api/dashboards/1860/revisions/24/download",
                             "datasource": "Prometheus"
                         }
                     }
