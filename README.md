@@ -74,16 +74,31 @@ nat gateway to reduce costs (a nat gateway charges around $ 30 per month on AWS 
 instead, it is recommended to set the `nats_number` parameter to `3` (one per natted subnet) to avoid cutting
 fully access to the internet of the application in case of fail of an AZ.
 
-### Compute:
-
-EKS was chosen as a computing resource on which to host the web server, prometheus and grafana. EKS nodes will be spawned on natted subnets to allow access to different AWS services such as ECR
+### Kubernetes cluster
+EKS has been chosen as a computing resource on which to host the web server, prometheus and grafana. 
+EKS nodes will be spawned on natted subnets to allow access to different AWS services such as ECR
 and the internet.
-
-Additionally, an autoscaling rule has been implemented which scales out when the container reaches 75% of
-cpu utilization with a 30 second scale-in and scale-out cooldown. To balance the load towards the pods that host the web server in the different AZs, an Application Load Balancer has been created. To keep EKS costs down, it was
-added the possibility to create a part of the nodes in Spot mode. Via the `eks.spot_instance_count`
+The Kubernetes Cluster is based on Kubernetes version 1.21.
+To keep EKS costs down, it was added the possibility to create a part of the nodes in Spot mode. Via the `eks.spot_instance_count`
 and `eks.on_demand_instance_count` parameters, you can decide the strategy used by the autoscalers to choose the type of node to
 spawn.
+In fact, two worker groups have been created by deploying as many autoscaling groups.
+Additionally, an autoscaling rule has been implemented to scales out spot nodes when the 75% of
+cpu utilization is reached. To balance the load towards the pods that host the web server in the different AZs, 
+an Application Load Balancer has been created. 
+
+The usage of CDK allowed the deployment of the Kubernetes resources in a simple and controlled way.
+In case of failure during the application of kubernetes manifests and helm charts results in a CloudFormation rollback 
+avoiding the possibility of broken deployments.
+
+To enable the Horizontal Pod Autoscaler (HPA) to do its job, the first resources deployed on the Kubernetes cluster 
+is the Metrics Server manifest.
+
+The application resources have been deployed via Helm Charts. Prometheus and Grafana, in fact, are 
+pulled from their official helm repositories, while the Web Server is based on a custom chart specifically created
+(in the folder `/helm/ccekswebserver`).
+
+Grafana's helm chart values have been modified to allow it to reach Prometheus metrics and download a dashboard from the internet.
 
 ### CI/CD:
 
@@ -125,6 +140,10 @@ In this paragraph the most important ones I identified are listed:
     however, to discontinue its use in favor of HTTPS. To do this, one can generate an SSL certificate via AWS
     Certificate Manager. Thanks to the TLS session termination feature of the Load Balancers, it is then possible to enable
     HTTPS easily with the created certificate.
+3. Better scaling strategies can be implemented according to relevant metrics. 
+    For example the bytes received by the load balancers can be useful to scale-out the nodes from 0 when users try to reach the
+    web server's pages.
+4. Usage of Fargate over EC2 EKS nodes can be extremely beneficial to reduce the hustle of managing the cluster autoscaler.
 
 ___
 <h4 style="text-align: right">Christian Calabrese</h4>
