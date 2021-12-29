@@ -7,7 +7,7 @@
   "github_repository_owner": "christian-calabrese",
   "vpc": {
     "az_number": 3,
-    "nats_number": 0
+    "nats_number": 3
   },
   "eks": {
     "cluster_name": "SimpleEKS-Cluster",
@@ -16,7 +16,13 @@
     "on_demand_instance_count": 3,
     "spot_instance_count": 3,
     "web_server_replicas": 3,
-    "fargate_enabled": true,
-    "eks_version": "1.21"
+    "fargate_enabled": false,
+    "eks_version": "1.21",
+    "privileged_iam_principals": {
+      "users": [
+        "arn:aws:iam::920959257265:user/cli"
+      ],
+      "roles": []
+    }
   }
 }
