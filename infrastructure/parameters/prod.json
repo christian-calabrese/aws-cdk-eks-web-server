@@ -13,8 +13,8 @@
     "cluster_name": "SimpleEKS-Cluster",
     "container_image_name": "eks_web_server_cdk",
     "compute_size": "large",
-    "on_demand_instance_count": 2,
-    "spot_instance_count": 1,
+    "on_demand_instance_count": 3,
+    "spot_instance_count": 3,
     "web_server_replicas": 3,
     "fargate_enabled": true,
     "eks_version": "1.21"
